@@ -1,0 +1,23 @@
+--- a/src/mpl/src/gpu/mpl_gpu_cuda.c
++++ b/src/mpl/src/gpu/mpl_gpu_cuda.c
+@@ -299,10 +299,18 @@
+
+     cudaError_t ret;
+     ret = cudaGetDeviceCount(&device_count);
+-    if (ret == cudaErrorNoDevice) {
++    if (ret == cudaErrorNoDevice || ret == cudaErrorInsufficientDriver ||
++        ret == cudaErrorSystemDriverMismatch || ret == cudaErrorInitializationError) {
++        /* these codes all mean "no usable CUDA GPU on this system", which is
++         * the normal situation on a CPU-only node that is nonetheless linked
++         * against a CUDA-enabled MPICH build:
++         * - cudaErrorNoDevice / cudaErrorInsufficientDriver: no device, or driver too old
++         * - cudaErrorSystemDriverMismatch: stub libcuda, no real GPU driver installed
++         * - cudaErrorInitializationError: CUDA runtime could not initialize (no driver) */
++        cudaError_t orig_ret = ret;
+         /* call cudaGetLastError() to consume the error */
+         ret = cudaGetLastError();
+-        assert(ret == cudaErrorNoDevice);
++        assert(ret == orig_ret);
+         device_count = 0;
+     } else {
+         CUDA_ERR_CHECK(ret);

@@ -1,9 +1,10 @@
-### RPM external mpich v4.3.2
+### RPM external mpich v5.0.1
 ## INCLUDE cuda-flags
 ## INCLUDE rocm-flags
-%define branch 4.3.x
+%define branch 5.0.x
 %define tag %{realversion}
 Source: git+https://github.com/pmodels/mpich.git?obj=%{branch}/%{tag}&export=%{n}-%{realversion}&submodules=1&output=/%{n}-%{realversion}.tgz
+Patch0: mpich-5.0.1-cuda-no-device
 BuildRequires: autotools
 %{!?without_cuda:Requires: cuda}
 %{!?without_rocm:Requires: rocm}
@@ -11,6 +12,7 @@ Requires: libfabric
 Requires: ucx
 Requires: hwloc
 Requires: xpmem
+Requires: yaksa
 
 # external libraries are needed for additional protocols:
 #   --with-hcoll:       Mellanox Hierarchical Collectives
@@ -19,6 +21,7 @@ Requires: xpmem
 
 %prep
 %setup -q -n %{n}-%{realversion}
+%patch0 -p1
 
 # remove the submodules we do not want to use
 rm -rf modules/hwloc
@@ -85,6 +88,7 @@ sed -e's/do_ucx=.*/do_ucx=no/' -i autogen.sh
   --without-cuda \
 %endif
   --without-hip \
+  --without-nccl \
   --without-ze \
   --with-pic \
   --with-gnu-ld \
@@ -93,7 +97,7 @@ sed -e's/do_ucx=.*/do_ucx=no/' -i autogen.sh
   --with-hwloc=$HWLOC_ROOT \
   --without-netloc \
   --with-xpmem=$XPMEM_ROOT \
-  --with-yaksa=embedded \
+  --with-yaksa=$YAKSA_ROOT \
   --with-device=ch4:ucx
 
 %build

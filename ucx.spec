@@ -2,6 +2,7 @@
 ## INCLUDE microarch_flags
 ## INCLUDE cuda-flags
 Source: git+https://github.com/openucx/%{n}.git?obj=master/v%{realversion}&export=%{n}-%{realversion}&submodules=1&output=/%{n}-%{realversion}.tgz
+Patch0: ucx-1.21.0-gdaki-cuda-init
 BuildRequires: autotools
 %{!?without_cuda:Requires: cuda gdrcopy}
 Requires: numactl
@@ -11,6 +12,7 @@ Requires: xpmem
 
 %prep
 %setup -q -n %{n}-%{realversion}
+%patch0 -p1
 
 # regenerate the configure files and Makefiles
 ./autogen.sh

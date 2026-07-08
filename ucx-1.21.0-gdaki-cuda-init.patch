@@ -1,0 +1,18 @@
+--- a/src/uct/ib/mlx5/gdaki/gdaki.c
++++ b/src/uct/ib/mlx5/gdaki/gdaki.c
+@@ -1224,9 +1224,13 @@ uct_gdaki_enum_gpus(uct_gdaki_gpu_info_t *gpus, unsigned *count_p)
+     ucs_sys_device_t cuda_sys_dev;
+     ucs_status_t status;
+
+-    status = UCT_CUDADRV_FUNC_LOG_ERR(cuDeviceGetCount(&cuda_dev_count));
++    /* Log at DIAG rather than ERROR: on CPU-only nodes compiled with CUDA
++     * support cuDeviceGetCount fails because there is no GPU driver; treat
++     * this as zero GPUs rather than a hard error. */
++    status = UCT_CUDADRV_FUNC(cuDeviceGetCount(&cuda_dev_count), UCS_LOG_LEVEL_DIAG);
+     if (status != UCS_OK) {
+-        return status;
++        *count_p = 0;
++        return UCS_OK;
+     }
+
+     ucs_assert_always(cuda_dev_count <= UCT_GDAKI_MAX_CUDA_DEVICES);

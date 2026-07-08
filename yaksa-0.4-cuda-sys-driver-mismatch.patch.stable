@@ -1,0 +1,28 @@
+--- a/src/backend/cuda/hooks/yaksuri_cuda_init_hooks.c
++++ b/src/backend/cuda/hooks/yaksuri_cuda_init_hooks.c
+@@ -170,12 +170,23 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks)
+     cudaError_t cerr;
+
+     cerr = cudaGetDeviceCount(&yaksuri_cudai_global.ndevices);
+-    if (cerr == cudaErrorNoDevice || cerr == cudaErrorInsufficientDriver) {
+-        /* both codes can indicate no devices available on the system */
++    if (cerr == cudaErrorNoDevice || cerr == cudaErrorInsufficientDriver ||
++        cerr == cudaErrorSystemDriverMismatch ||
++        cerr == cudaErrorInitializationError) {
++        /* these codes all mean no usable CUDA GPU on this system:
++         * - cudaErrorNoDevice / cudaErrorInsufficientDriver: no device or old driver
++         * - cudaErrorSystemDriverMismatch: stub CUDA library, no real GPU driver installed
++         * - cudaErrorInitializationError: CUDA runtime failed to initialize (no driver,
++         *   driver/runtime mismatch, or GPU hidden by CUDA_VISIBLE_DEVICES on a node
++         *   that uses stub CUDA libraries) */
+         goto fn_exit;
+     }
+     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
++    if (yaksuri_cudai_global.ndevices == 0) {
++        goto fn_exit;
++    }
++
+     if (getenv("CUDA_VISIBLE_DEVICES") == NULL) {
+         /* user did not do any filtering for us; if any of the devices
+          * is in exclusive mode, disable GPU support to avoid
